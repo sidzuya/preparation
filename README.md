@@ -11,28 +11,46 @@ npm run dev
 
 Сайт откроется на `http://localhost:5173`
 
-## Деплой на Railway
+## Деплой на Vercel (бесплатно, постоянная ссылка)
 
-1. Залейте этот проект в GitHub (см. инструкцию ниже).
-2. Зайдите на [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**.
-3. Выберите репозиторий `art-quiz`.
-4. Railway сам определит Node.js: команда сборки `npm run build`, запуск `npm run start`.
-5. В настройках сервиса включите **Generate Domain** — появится постоянная ссылка на сайт.
+### 1. Код на GitHub
 
-## Публикация на GitHub (первый раз)
+Репозиторий: `https://github.com/sidzuya/preparation`
 
-В терминале из папки проекта:
+Если есть новые изменения локально:
 
 ```bash
-cd art-quiz
-git init
+cd /Users/sidzuya/Desktop/preparation/art-quiz
 git add .
-git commit -m "Initial commit: art history quiz app"
-
-# Создайте пустой репозиторий на github.com (без README), затем:
-git remote add origin https://github.com/ВАШ_ЛОГИН/art-quiz.git
-git branch -M main
-git push -u origin main
+git commit -m "Описание изменений"
+git push
 ```
 
-Замените `ВАШ_ЛОГИН` на свой логин GitHub.
+### 2. Подключить Vercel
+
+1. Зайдите на [vercel.com](https://vercel.com) и войдите через **GitHub**.
+2. **Add New…** → **Project**.
+3. Выберите репозиторий **preparation** (или `art-quiz`, если создадите отдельный).
+4. Настройки (обычно подставляются сами для Vite):
+   - **Framework Preset:** Vite
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+   - **Install Command:** `npm install`
+5. Нажмите **Deploy**.
+
+Через 1–2 минуты появится ссылка вида `https://preparation-xxx.vercel.app` — сайт будет работать в интернете, не только на вашем компьютере.
+
+### 3. Обновления
+
+После каждого `git push` в `main` Vercel сам пересоберёт и обновит сайт.
+
+### Деплой из терминала (по желанию)
+
+```bash
+npm i -g vercel
+cd art-quiz
+vercel login
+vercel
+```
+
+Следуйте подсказкам в терминале.
