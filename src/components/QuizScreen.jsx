@@ -8,6 +8,10 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
   const [answerHistory, setAnswerHistory] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Hint state
+  const [showHint, setShowHint] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
 
   // Helper to shuffle array
   const shuffleArray = (array) => {
@@ -25,6 +29,8 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
     setAnswerHistory([]);
     setIsFinished(false);
     setLoading(true);
+    setShowHint(false);
+    setHintsUsed(0);
 
     if (quizId === 'mixed') {
       // Fetch all quizzes
@@ -33,7 +39,6 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
           let allQuestions = [];
           results.forEach(quiz => {
             if (quiz.questions) {
-              // Add a tag to know which presentation it came from
               const qWithSource = quiz.questions.map(q => ({
                 ...q,
                 sourceTitle: quiz.title
@@ -42,11 +47,11 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
             }
           });
           
-          // Shuffle all questions and pick 50 (or less if not enough)
-          allQuestions = shuffleArray(allQuestions).slice(0, 50);
+          // Shuffle all questions and pick 100
+          allQuestions = shuffleArray(allQuestions).slice(0, 100);
           
           setQuizData({
-            title: 'Смешанный тест (50 случайных вопросов)',
+            title: 'Смешанный тест (100 случайных вопросов)',
             questions: allQuestions
           });
           setLoading(false);
@@ -71,14 +76,19 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
   }, [quizId]);
 
   if (loading) {
-    return <div className="quiz-screen"><p>Загрузка теста...</p></div>;
+    return (
+      <div className="quiz-screen loading-container">
+        <div className="loading-spinner"></div>
+        <p className="loading-text">Загрузка вопросов...</p>
+      </div>
+    );
   }
 
   if (!quizData || !quizData.questions || quizData.questions.length === 0) {
     return (
       <div className="quiz-screen">
         <button className="back-btn" onClick={onBack}>← Назад</button>
-        <div className="question-container">
+        <div className="question-container" style={{ textAlign: 'center' }}>
           <p>Ошибка загрузки вопросов. Пожалуйста, попробуйте позже.</p>
         </div>
       </div>
@@ -109,6 +119,12 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
           <p className="results-summary">
             Правильных ответов: {score} · Ошибок: {total - score}
           </p>
+          
+          {hintsUsed > 0 && (
+            <div className="results-hints-used">
+              <span>💡 Использовано подсказок: {hintsUsed}</span>
+            </div>
+          )}
 
           <div className="results-review">
             <h3>Разбор ответов</h3>
@@ -130,9 +146,9 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
                   <p className="results-item-question">{entry.questionText}</p>
                   {!entry.isCorrect && (
                     <p className="results-item-answer">
-                      Ваш ответ: <strong>{entry.selectedLabel}</strong>
+                      Ваш ответ: <strong style={{color: 'var(--error)'}}>{entry.selectedLabel}</strong>
                       <br />
-                      Правильно: <strong>{entry.correctLabel}</strong>
+                      Правильно: <strong style={{color: 'var(--success)'}}>{entry.correctLabel}</strong>
                     </p>
                   )}
                 </li>
@@ -155,10 +171,39 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
     setSelectedOption(optionKey);
   };
 
+  const handleToggleHint = () => {
+    if (!showHint) {
+      setHintsUsed(prev => prev + 1);
+    }
+    setShowHint(!showHint);
+  };
+
   const handleNext = () => {
     if (!selectedOption) return;
 
     const isCorrect = selectedOption === currentQuestion.correct;
+    
+    // Save to mistake bank if incorrect
+    if (!isCorrect) {
+      const mistakeRecord = {
+        ...currentQuestion,
+        sourceTitle: currentQuestion.sourceTitle || quizData.title
+      };
+      
+      const stored = localStorage.getItem('artQuizMistakeBank');
+      let bank = [];
+      if (stored) {
+        try { bank = JSON.parse(stored); } catch(e) {}
+      }
+      
+      // Prevent duplicates by question id/text
+      const exists = bank.find(q => q.question === mistakeRecord.question);
+      if (!exists) {
+        bank.push(mistakeRecord);
+        localStorage.setItem('artQuizMistakeBank', JSON.stringify(bank));
+      }
+    }
+
     setAnswerHistory((prev) => [
       ...prev,
       {
@@ -181,6 +226,7 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
 
     setCurrentQuestionIdx((prev) => prev + 1);
     setSelectedOption(null);
+    setShowHint(false);
   };
 
   const getOptionClass = (optionKey) => {
@@ -192,20 +238,24 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
   return (
     <div className="quiz-screen">
       <button className="back-btn" onClick={onBack}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
-        Назад к списку
+        Назад
       </button>
 
       <div className="question-container">
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progress}%` }}></div>
         </div>
-        <p className="quiz-meta">
-          Вопрос {currentQuestionIdx + 1} из {quizData.questions.length}
-        </p>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <p className="quiz-meta" style={{ marginBottom: 0 }}>
+            Вопрос {currentQuestionIdx + 1} из {quizData.questions.length}
+          </p>
+        </div>
+        
         {currentQuestion.sourceTitle && (
           <p className="quiz-source">
             Из темы: {currentQuestion.sourceTitle}
@@ -221,10 +271,27 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
               className={getOptionClass(key)}
               onClick={() => handleOptionClick(key)}
             >
-              <span className="option-label">{key}.</span> {value}
+              <span className="option-label">{key}</span> 
+              <span>{value}</span>
             </button>
           ))}
         </div>
+
+        {currentQuestion.hint && (
+          <>
+            <button 
+              className="hint-toggle" 
+              onClick={handleToggleHint}
+            >
+              <span className="hint-icon">💡</span> {showHint ? "Скрыть подсказку" : "Показать подсказку"}
+            </button>
+            {showHint && (
+              <div className="hint-box">
+                {currentQuestion.hint}
+              </div>
+            )}
+          </>
+        )}
 
         <button
           type="button"
@@ -232,7 +299,7 @@ const QuizScreen = ({ quizId, quizTitle, onBack }) => {
           onClick={handleNext}
           disabled={!selectedOption}
         >
-          Следующий
+          {currentQuestionIdx >= quizData.questions.length - 1 ? 'Завершить тест' : 'Следующий вопрос'}
         </button>
       </div>
     </div>

@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QuizScreen from './components/QuizScreen';
+import MistakeReview from './components/MistakeReview';
 
 const QUIZ_SECTIONS = [
   {
     id: 'general',
     title: 'Общий тест',
     description: 'Вопросы из всех презентаций курса',
+    icon: '🏆',
     quizzes: [
-      { id: 'mixed', title: 'Смешанный тест', subtitle: '50 случайных вопросов', isSpecial: true },
+      { id: 'mixed', title: 'Смешанный тест', subtitle: '100 случайных вопросов', isSpecial: true },
     ],
   },
   {
     id: 'ancient',
     title: 'Древний мир',
     description: 'Первобытность, Египет, Греция, Рим, Крит и Микены',
+    icon: '🏛️',
     quizzes: [
       { id: 'quiz_1', title: 'Первобытное искусство', subtitle: 'Презентация 1' },
       { id: 'quiz_17', title: 'Крито-минойская цивилизация', subtitle: 'Отдельная тема' },
@@ -26,6 +29,7 @@ const QUIZ_SECTIONS = [
     id: 'medieval-renaissance',
     title: 'Средние века и Новое время',
     description: 'Средневековье, Возрождение, барокко, классицизм, рококо',
+    icon: '🏰',
     quizzes: [
       { id: 'quiz_5', title: 'Искусство Средневековья', subtitle: 'Презентация 5' },
       { id: 'quiz_7', title: 'Эпоха Возрождения', subtitle: 'Презентация 6, ч. 1' },
@@ -39,6 +43,7 @@ const QUIZ_SECTIONS = [
     id: 'russian',
     title: 'Русское искусство',
     description: 'От древнерусской иконы до XIX века',
+    icon: '🪆',
     quizzes: [
       { id: 'quiz_10', title: 'Русское искусство', subtitle: 'Презентация 10' },
     ],
@@ -47,6 +52,7 @@ const QUIZ_SECTIONS = [
     id: 'modern',
     title: 'Искусство XIX–XXI века',
     description: 'Западное искусство нового и современного времени',
+    icon: '🎨',
     quizzes: [
       { id: 'quiz_11', title: 'Искусство XIX–XX века', subtitle: 'Презентация 11' },
       { id: 'quiz_12', title: 'Искусство XX–XXI века', subtitle: 'Презентация 12' },
@@ -56,6 +62,7 @@ const QUIZ_SECTIONS = [
     id: 'kazakh',
     title: 'Казахское искусство',
     description: 'Традиции, орнамент, степная культура',
+    icon: '🦅',
     quizzes: [
       { id: 'quiz_13', title: 'Казахское искусство', subtitle: 'Презентация 13, ч. 1' },
       { id: 'quiz_14', title: 'Казахское искусство', subtitle: 'Презентация 14, ч. 2' },
@@ -66,6 +73,7 @@ const QUIZ_SECTIONS = [
     id: 'basics',
     title: 'Основы',
     description: 'Общие понятия курса',
+    icon: '📚',
     quizzes: [
       { id: 'quiz_18', title: 'Жанры изобразительного искусства', subtitle: 'Справочная тема' },
     ],
@@ -78,10 +86,27 @@ export const ALL_QUIZ_IDS = QUIZ_SECTIONS.flatMap((section) =>
 
 function App() {
   const [activeQuiz, setActiveQuiz] = useState(null);
+  const [mistakeCount, setMistakeCount] = useState(0);
+  const [showMistakes, setShowMistakes] = useState(false);
+
+  useEffect(() => {
+    // Check localStorage for mistakes
+    const stored = localStorage.getItem('artQuizMistakeBank');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setMistakeCount(parsed.length);
+      } catch (e) {
+        setMistakeCount(0);
+      }
+    }
+  }, [activeQuiz, showMistakes]); // re-check when returning from a quiz
 
   return (
     <div className="app-container">
-      {activeQuiz ? (
+      {showMistakes ? (
+        <MistakeReview onBack={() => setShowMistakes(false)} />
+      ) : activeQuiz ? (
         <QuizScreen
           quizId={activeQuiz.id}
           quizTitle={activeQuiz.title}
@@ -95,11 +120,44 @@ function App() {
           </header>
 
           <div className="quiz-sections">
+            {/* Mistake review section */}
+            {mistakeCount > 0 && (
+              <section className="quiz-section">
+                <div className="section-header">
+                  <span className="section-icon">🧠</span>
+                  <div className="section-header-text">
+                    <h2 className="section-title">Работа над ошибками</h2>
+                    <p className="section-desc">Повторите вопросы, в которых вы ошиблись</p>
+                  </div>
+                </div>
+                <div className="quiz-grid quiz-grid--single">
+                  <div 
+                    className="card mistake-card"
+                    onClick={() => setShowMistakes(true)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <h3>Персональная тренировка</h3>
+                    <p>Тренировка сложных вопросов</p>
+                    <div className="mistake-count">
+                      Ошибок в банке: {mistakeCount}
+                    </div>
+                    <button type="button" className="play-btn retry-mistakes-btn">
+                      Тренировать
+                    </button>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {QUIZ_SECTIONS.map((section) => (
               <section key={section.id} className="quiz-section">
                 <div className="section-header">
-                  <h2 className="section-title">{section.title}</h2>
-                  <p className="section-desc">{section.description}</p>
+                  <span className="section-icon">{section.icon}</span>
+                  <div className="section-header-text">
+                    <h2 className="section-title">{section.title}</h2>
+                    <p className="section-desc">{section.description}</p>
+                  </div>
                 </div>
                 <div className={`quiz-grid ${section.quizzes.length === 1 ? 'quiz-grid--single' : ''}`}>
                   {section.quizzes.map((quiz) => (
