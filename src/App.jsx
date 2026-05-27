@@ -13,6 +13,15 @@ const QUIZ_SECTIONS = [
     ],
   },
   {
+    id: 'artworks',
+    title: 'Художники и картины',
+    description: 'Угадайте автора картины или картину автора',
+    icon: '🖼️',
+    quizzes: [
+      { id: 'quiz_artworks', title: 'Художники и произведения', subtitle: 'Только авторство', isSpecial: true },
+    ],
+  },
+  {
     id: 'ancient',
     title: 'Древний мир',
     description: 'Первобытность, Египет, Греция, Рим, Крит и Микены',
