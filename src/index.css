@@ -498,6 +498,10 @@ header .subtitle {
   line-height: 1.55;
   color: var(--text-heading);
   letter-spacing: -0.01em;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 /* ============================================
@@ -525,6 +529,15 @@ header .subtitle {
   display: flex;
   align-items: flex-start;
   gap: 0.6rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  max-width: 100%;
+}
+
+.option-btn span:last-child {
+  flex: 1;
 }
 
 .option-btn:hover {
@@ -588,6 +601,9 @@ header .subtitle {
   line-height: 1.55;
   animation: slideDown 0.3s ease forwards;
   overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .hint-box .hint-icon {
